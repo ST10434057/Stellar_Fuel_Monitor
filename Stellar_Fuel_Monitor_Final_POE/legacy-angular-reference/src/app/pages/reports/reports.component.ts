@@ -1,0 +1,36 @@
+import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { DailyAnalytics } from '../../core/models';
+import { MockDataService } from '../../core/mock-data.service';
+import { PageHeaderComponent } from '../../shared/page-header.component';
+import { IconComponent } from '../../shared/icon.component';
+
+@Component({selector:'app-reports',standalone:true,imports:[CommonModule,FormsModule,PageHeaderComponent,IconComponent],template:`
+<app-page-header title="Full-Cycle Fuel Performance Reports" breadcrumb="reports / completed fuel cycles" icon="report"></app-page-header>
+<section class="content-card report-builder no-print">
+ <div class="section-title"><div><h2>Daily Full-Cycle Performance Report</h2><p>One row is one completed Stellar full-up → route work/top-ups → next Stellar full-up cycle. The report uses the same calculation as Home, Alerts and Trip Investigation.</p></div><span class="prototype-label">V17 FULL-CYCLE</span></div>
+ <div class="report-controls report-controls-simple"><label><span>Cycle closing date</span><input type="date" [(ngModel)]="date"></label><label><span>View</span><select [(ngModel)]="view"><option>All performance</option><option>Needs review</option><option>Baseline only</option><option>Outstanding only</option><option>Data warnings</option></select></label></div>
+ <div class="button-row"><button class="primary-btn" (click)="generate()">Generate Report</button><button class="secondary-btn" [disabled]="!report" (click)="exportCsv()">Export CSV</button><button class="secondary-btn" [disabled]="!report" (click)="printReport()"><app-icon name="report"></app-icon> Print / Save PDF</button></div>
+ @if(message){<p class="form-message">{{message}}</p>}
+</section>
+@if(report){
+<section class="print-only print-report-heading"><h1>Stellar Transport · Full-Cycle Fuel Performance</h1><p>Cycles closed {{report.date}} · {{view}}</p></section>
+<section class="content-card report-preview">
+ <div class="section-title"><div><h2>Cycles closed · {{report.date}}</h2><p>{{report.totalTrips}} completed full-to-full fuel cycles closed on the selected day.</p></div></div>
+ <div class="kpi-row seven-kpis"><div class="kpi high"><span>Poor</span><strong>{{report.counts.poor}}</strong></div><div class="kpi review"><span>Review</span><strong>{{report.counts.review}}</strong></div><div class="kpi neutral"><span>Average</span><strong>{{report.counts.average}}</strong></div><div class="kpi good"><span>Good</span><strong>{{report.counts.good}}</strong></div><div class="kpi outstanding"><span>Outstanding</span><strong>{{report.counts.outstanding}}</strong></div><div class="kpi baseline"><span>Baseline</span><strong>{{report.counts.baseline}}</strong></div><div class="kpi data"><span>Data warnings</span><strong>{{report.counts.dataWarnings}}</strong></div></div>
+ <div class="report-disclaimer"><app-icon name="info"></app-icon><span>Performance primarily compares the cycle km/L with <strong>prior valid full cycles from equivalent trucks with the same fleet-master model/type + axle configuration on the same route</strong> inside the configured history window. The main average is total historical km ÷ total historical litres; the median is shown separately. The exact truck's own route benchmark remains available as a diagnostic fallback/secondary comparison.</span></div>
+</section>
+<section class="content-card"><div class="section-title"><div><h2>{{view}}</h2><p>Investigate opens the complete fuel cycle, including every intermediate top-up, route evidence and the same-model/same-route benchmark, exact-truck history and weighted fuel rows used for the result.</p></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Truck</th><th>Cycle</th><th>Route</th><th>Total KM</th><th>Total Litres</th><th>Cycle km/L</th><th>Model/route avg</th><th>Fuel variance</th><th>Result</th><th class="no-print"></th></tr></thead><tbody>@for(t of visibleTrips;track t.id){<tr><td><strong>{{t.registration}}</strong></td><td>{{t.openingDate||'—'}} → {{t.closingDate||t.date}}</td><td>{{t.routeLabel||t.destination||'Unknown'}}</td><td>{{t.kilometers==null?'—':(t.kilometers|number:'1.0-0')}}</td><td>{{t.litres==null?'—':(t.litres|number:'1.0-1')}}</td><td>{{t.analysedKmL===null?'—':(t.analysedKmL|number:'1.2-2')}}</td><td>{{t.benchmark?.averageKmL===undefined?'—':(t.benchmark?.averageKmL|number:'1.2-2')}}</td><td>{{t.excessLitres==null?'—':(((t.excessLitres||0)>0?'+':'')+(t.excessLitres|number:'1.0-1')+' L')}}</td><td><span class="rating-badge" [attr.data-rating]="t.rating">{{t.rating}}</span></td><td class="no-print"><button class="small-action" (click)="router.navigate(['/app/trips',t.id])">Investigate</button></td></tr>}</tbody></table></div></section>
+}
+`,styles:[`.button-row button{display:flex;align-items:center;gap:7px}.print-only{display:none}.print-report-heading{margin:18px 20px 0}.print-report-heading h1{margin:0;font-size:24px}.print-report-heading p{margin:4px 0;color:#68717d}`]})
+export class ReportsComponent{
+ date='';view='All performance';report?:DailyAnalytics;message='';
+ constructor(public data:MockDataService,public router:Router){void this.init();}
+ async init(){try{const summary=await this.data.dashboardSummary();const trips=await this.data.dayTrips(summary.date);this.report={...summary,trips};this.date=summary.date;}catch{this.message='Could not load the report. Start the Express API.';}}
+ async generate(){try{const summary=await this.data.dashboardSummary(this.date);const trips=await this.data.dayTrips(this.date);this.report={...summary,trips};this.message=`Full-cycle report generated for ${this.report.date}.`;}catch{this.message='The selected date could not be loaded.';}}
+ get visibleTrips(){if(!this.report)return[];if(this.view==='Needs review')return this.report.needsReview;if(this.view==='Baseline only')return this.report.trips.filter(t=>t.rating==='Baseline');if(this.view==='Outstanding only')return this.report.outstanding;if(this.view==='Data warnings')return this.report.dataWarnings;return this.report.trips;}
+ exportCsv(){if(!this.report)return;const esc=(v:any)=>`"${String(v??'').replaceAll('"','""')}"`;const rows=[['Cycle Closing Date','Cycle Opening Date','Truck','Route','Destination visits','Total distance km','Total litres','Full-cycle km/L','Historical same-truck route avg km/L','Fuel variance litres','Difference %','Prior matching cycles','Rating','Confidence %'],...this.visibleTrips.map(t=>[t.closingDate||t.date,t.openingDate||'',t.registration,t.routeLabel||t.destination||'',t.destinationVisitCount??'',t.kilometers??'',t.litres??'',t.analysedKmL??'',t.benchmark?.averageKmL??'',t.excessLitres??'',t.deviationPct??'',t.benchmark?.sampleSize??0,t.rating,t.confidenceScore])];const csv=rows.map(r=>r.map(esc).join(',')).join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`stellar-full-cycle-report-${this.report.date}.csv`;a.click();URL.revokeObjectURL(url);this.message='CSV exported.';}
+ printReport(){window.print();}
+}

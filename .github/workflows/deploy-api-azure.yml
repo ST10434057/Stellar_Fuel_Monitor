@@ -1,0 +1,96 @@
+# Deploys the Express API (Stellar_Fuel_Monitor_Final_POE/server) to Azure App Service
+# (Linux, Node 22) after its tests pass, then checks /api/health on the live site.
+#
+# One-off setup (Stellar_Fuel_Monitor_Final_POE/docs/NICK_BACKEND_CLOUD_SETUP.md):
+#   repository variable  AZURE_WEBAPP_NAME             the App Service name
+#   repository secret    AZURE_WEBAPP_PUBLISH_PROFILE  App Service > Overview > Download publish profile
+# Until both exist the job only prints a notice, so CI stays green before Azure is created.
+name: Deploy API to Azure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Stellar_Fuel_Monitor_Final_POE/server/**'
+      - '.github/workflows/deploy-api-azure.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-api-azure
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Test, deploy and health-check the API
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
+      HAS_PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE != '' }}
+      SERVER_DIR: Stellar_Fuel_Monitor_Final_POE/server
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Azure deployment settings
+        id: config
+        run: |
+          if [ -z "$AZURE_WEBAPP_NAME" ] || [ "$HAS_PUBLISH_PROFILE" != "true" ]; then
+            echo "::notice title=Azure deploy skipped::Set the AZURE_WEBAPP_NAME variable and the AZURE_WEBAPP_PUBLISH_PROFILE secret to enable deployment."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.config.outputs.enabled == 'true'
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ${{ env.SERVER_DIR }}/package-lock.json
+
+      - name: Install production dependencies
+        if: steps.config.outputs.enabled == 'true'
+        working-directory: ${{ env.SERVER_DIR }}
+        run: npm ci --omit=dev
+
+      - name: Syntax check and automated tests
+        if: steps.config.outputs.enabled == 'true'
+        working-directory: ${{ env.SERVER_DIR }}
+        run: |
+          npm run check
+          npm test
+
+      - name: Remove local-only files from the package
+        if: steps.config.outputs.enabled == 'true'
+        working-directory: ${{ env.SERVER_DIR }}
+        run: rm -rf logs data/evidence-uploads data/app-state.json data/update-backups .env
+
+      - name: Deploy to Azure App Service
+        id: deploy
+        if: steps.config.outputs.enabled == 'true'
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ${{ env.SERVER_DIR }}
+
+      - name: Wait for /api/health on the live API
+        if: steps.config.outputs.enabled == 'true'
+        env:
+          WEBAPP_URL: ${{ steps.deploy.outputs.webapp-url }}
+        run: |
+          # The analytics caches load before the server listens, so allow a few minutes.
+          for attempt in $(seq 1 12); do
+            if body=$(curl -fsS --max-time 30 "$WEBAPP_URL/api/health"); then
+              echo "$body" | jq '{ok, featureVersion, source, mongoConnected, finalPoe}'
+              exit 0
+            fi
+            echo "Attempt $attempt: API not ready yet, retrying in 20s"
+            sleep 20
+          done
+          echo "::error::$WEBAPP_URL/api/health did not respond after deployment"
+          exit 1

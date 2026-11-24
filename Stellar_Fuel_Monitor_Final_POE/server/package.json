@@ -1,0 +1,26 @@
+{
+  "name": "stellar-fuel-monitor-api",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "reset": "node src/reset.js",
+    "test": "node --test",
+    "check": "node scripts/check-syntax.mjs",
+    "verify:analytics": "node scripts/verify-analytics.mjs",
+    "demo:records": "node scripts/pick-demo-records.mjs",
+    "smoke:final-poe": "node scripts/smoke-final-poe.mjs"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^5.1.0",
+    "express-validator": "^7.3.2",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.5.0"
+  }
+}

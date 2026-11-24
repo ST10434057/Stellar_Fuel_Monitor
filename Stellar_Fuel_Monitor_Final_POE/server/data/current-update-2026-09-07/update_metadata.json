@@ -1,0 +1,33 @@
+{
+  "_id": "stellar_current_update_2026_09_07",
+  "updateDate": "2026-09-07",
+  "sourcePackage": "Stellar operational exports generated 07 Sep 2026",
+  "purpose": "Current cumulative update for route-aware fuel and distance investigation. Supersedes the 13-Aug onward analytical window without deleting historical collections.",
+  "currentWindowStart": "2026-08-13",
+  "latestFuelTransactionDate": "2026-09-03",
+  "latestVehicleConsumptionDate": "2026-09-03",
+  "latestCompletedRouteContextDate": "2026-09-04",
+  "latestLoadingInstructionDate": "2026-09-07",
+  "latestCompleteFuelConsumptionDate": "2026-09-03",
+  "collections": {
+    "fuel_loading_events_current": 801,
+    "vehicle_consumption_current": 749,
+    "loading_instruction_updates": 1022,
+    "loading_instruction_route_updates": 660,
+    "consumption_route_matches_current": 749,
+    "fuel_tanks_current": 5
+  },
+  "quality": {
+    "vehicleConsumptionFuelLinked": 749,
+    "vehicleConsumptionFuelCoveragePct": 100.0,
+    "routeMatchConfidence": {
+      "none": 273,
+      "ambiguous": 276,
+      "high": 101,
+      "medium": 99
+    },
+    "routeMatchedRows": 146,
+    "dataWarningRows": 28
+  },
+  "importantMethodNote": "Extra kilometres use robust historical route/destination distance profiles. A positive distance variance is an investigation signal, not proof of unauthorised use. Current vehicle-consumption start/end odometer values are authoritative for the current analytical window; detailed fuel/tanker reports are corroboration."
+}

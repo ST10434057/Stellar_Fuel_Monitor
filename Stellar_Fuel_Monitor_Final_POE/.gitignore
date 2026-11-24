@@ -1,0 +1,37 @@
+# Android / Gradle
+android-app/.gradle/
+android-app/.idea/
+android-app/**/build/
+android-app/local.properties
+*.iml
+
+# Node
+server/node_modules/
+server/.env
+server/logs/
+# Local prototype state written when MongoDB is absent (alert reviews, trip context)
+server/data/app-state.json
+
+# IDE / OS
+.vscode/
+.DS_Store
+Thumbs.db
+
+.idea/
+*.zip
+*.apk
+
+# Final POE signing / Play Store build outputs
+*.jks
+*.keystore
+*.aab
+android-app/release/
+server/data/evidence-uploads/
+
+# Firebase Admin SDK private credentials and account exports
+**/*firebase-adminsdk*.json
+**/*service-account*key*.json
+**/*service_account*key*.json
+**/firebase-private-*.json
+**/google-services.json
+**/.env.*.local

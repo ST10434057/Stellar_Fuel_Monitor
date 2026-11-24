@@ -1,0 +1,26 @@
+{
+ "vehicles": [
+  {"registration":"B448BNG","description":"Heavy Truck Tractor","type":"Truck Tractor","manufacturer":"IVECO","model":"Stralis","status":"Active","vehicleGroup":"Heavy Tractor","vin":"VIN-PROTOTYPE-001","odometerKm":684120,"currentKmL":2.43,"benchmarkLow":2.20,"benchmarkHigh":2.80,"openAlerts":1},
+  {"registration":"BT70XXGP","description":"Emulsion Tanker","type":"Trailer","manufacturer":"Henred Fruehauf","model":"Tri-Axle Tanker","status":"Active","vehicleGroup":"Emulsion Tanker","vin":"VIN-PROTOTYPE-002","odometerKm":null,"currentKmL":null,"benchmarkLow":null,"benchmarkHigh":null,"openAlerts":0},
+  {"registration":"PROTO-203","description":"Heavy Truck Tractor","type":"Truck Tractor","manufacturer":"FAW","model":"JH6 28.500","status":"Active","vehicleGroup":"Heavy Tractor","vin":"VIN-PROTOTYPE-003","odometerKm":431556,"currentKmL":1.82,"benchmarkLow":2.15,"benchmarkHigh":2.75,"openAlerts":2},
+  {"registration":"PROTO-317","description":"Medium Duty Truck","type":"Truck","manufacturer":"Hino","model":"300","status":"Active","vehicleGroup":"Medium Truck","vin":"VIN-PROTOTYPE-004","odometerKm":265900,"currentKmL":4.68,"benchmarkLow":4.10,"benchmarkHigh":5.20,"openAlerts":0},
+  {"registration":"PROTO-412","description":"Light Delivery Vehicle","type":"LDV","manufacturer":"Ford","model":"Ranger","status":"Active","vehicleGroup":"Light Vehicle","vin":"VIN-PROTOTYPE-005","odometerKm":182330,"currentKmL":8.30,"benchmarkLow":7.20,"benchmarkHigh":9.50,"openAlerts":0},
+  {"registration":"PROTO-509","description":"Heavy Truck Tractor","type":"Truck Tractor","manufacturer":"IVECO","model":"Hi-Way 480","status":"Active","vehicleGroup":"Heavy Tractor","vin":"VIN-PROTOTYPE-006","odometerKm":null,"currentKmL":null,"benchmarkLow":2.20,"benchmarkHigh":2.80,"openAlerts":1}
+ ],
+ "transactions": [
+  {"id":"FT-001","registration":"B448BNG","date":"2026-08-10","litres":456,"distanceKm":1110,"kmL":2.43,"location":"Main Depot","cost":9920.16,"source":"Historical"},
+  {"id":"FT-002","registration":"B448BNG","date":"2026-08-07","litres":420,"distanceKm":1016,"kmL":2.42,"location":"Sasolburg","cost":9135.00,"source":"Prototype"},
+  {"id":"FT-003","registration":"PROTO-203","date":"2026-08-10","litres":510,"distanceKm":928,"kmL":1.82,"location":"Main Depot","cost":11092.50,"source":"Prototype"},
+  {"id":"FT-004","registration":"PROTO-203","date":"2026-08-06","litres":498,"distanceKm":1165,"kmL":2.34,"location":"Sasolburg","cost":10831.50,"source":"Prototype"},
+  {"id":"FT-005","registration":"PROTO-317","date":"2026-08-09","litres":190,"distanceKm":889,"kmL":4.68,"location":"Edenvale","cost":4132.50,"source":"Prototype"},
+  {"id":"FT-006","registration":"PROTO-412","date":"2026-08-08","litres":72,"distanceKm":598,"kmL":8.31,"location":"Main Depot","cost":1566.00,"source":"Prototype"},
+  {"id":"FT-007","registration":"PROTO-509","date":"2026-08-10","litres":505,"distanceKm":null,"kmL":null,"location":"Main Depot","cost":10983.75,"source":"Prototype"}
+ ],
+ "alerts": [
+  {"id":"A-001","registration":"PROTO-203","date":"2026-08-10","reason":"Consumption below prototype vehicle-group benchmark","severity":"High","status":"Open","kmL":1.82,"benchmark":"2.15–2.75 km/L (prototype)","driver":"Driver A","trailer":"Trip trailer link not confirmed","loadContext":"Actual trip load unavailable"},
+  {"id":"A-002","registration":"PROTO-509","date":"2026-08-10","reason":"Distance information missing — efficiency cannot be calculated","severity":"Data Warning","status":"Open","kmL":null,"benchmark":"2.20–2.80 km/L (prototype)","driver":"Driver B","trailer":"Insufficient data","loadContext":"Insufficient data"},
+  {"id":"A-003","registration":"B448BNG","date":"2026-08-10","reason":"Manual review requested for historical sample","severity":"Review","status":"Investigating","kmL":2.43,"benchmark":"2.20–2.80 km/L (prototype)","driver":"Driver C","trailer":"Insufficient data","loadContext":"Permissible load is not treated as actual trip load"},
+  {"id":"A-004","registration":"PROTO-203","date":"2026-08-06","reason":"Repeated refuelling pattern requires review","severity":"Review","status":"Open","kmL":2.34,"benchmark":"2.15–2.75 km/L (prototype)","driver":"Driver A","trailer":"Insufficient data","loadContext":"Insufficient data"}
+ ],
+ "audit": []
+}

@@ -1,0 +1,29 @@
+import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { TripAnalysis, VehicleAnalytics } from '../../core/models';
+import { MockDataService } from '../../core/mock-data.service';
+import { PageHeaderComponent } from '../../shared/page-header.component';
+import { IconComponent } from '../../shared/icon.component';
+
+@Component({selector:'app-vehicle-profile',standalone:true,imports:[CommonModule,PageHeaderComponent,IconComponent],template:`
+<app-page-header [title]="analytics?'Vehicle Profile – '+analytics.vehicle.registration:'Vehicle Profile'" breadcrumb="fleet / performance profile" icon="truck"></app-page-header>
+@if(analytics){
+<section class="profile-summary content-card">
+ <div class="profile-main"><div class="vehicle-avatar"><app-icon name="truck"></app-icon></div><div><span class="eyebrow">{{analytics.vehicle.peerType}}</span><h2>{{analytics.vehicle.registration}}</h2><p>{{analytics.vehicle.manufacturer}} {{analytics.vehicle.model}} · {{analytics.vehicle.axleConfiguration||'Axle configuration unavailable'}}</p></div></div>
+ <div class="summary-kpis"><div><span>Status</span><strong>{{analytics.vehicle.status}}</strong></div><div><span>Latest result</span><strong>{{analytics.vehicle.currentRating||'—'}}</strong></div><div><span>Latest km/L</span><strong>{{analytics.vehicle.currentKmL===null?'—':(analytics.vehicle.currentKmL|number:'1.2-2')}}</strong></div><div><span>Historical full-cycle median</span><strong>{{analytics.vehicle.historicalMedianKmL===null?'—':(analytics.vehicle.historicalMedianKmL|number:'1.2-2')}}</strong></div></div>
+</section>
+<section class="two-column-section">
+ <article class="content-card"><div class="section-title"><div><h2>Recent full-cycle performance trend</h2><p>One point per completed Stellar-to-Stellar fuel cycle.</p></div><span class="unit-pill">km/L</span></div><div class="simple-chart advanced-chart">@for(t of chartTrips;track t.id){<button class="chart-col" (click)="router.navigate(['/app/trips',t.id])"><div class="bar-wrap"><div class="chart-bar" [class.bad]="t.rating==='Poor'||t.rating==='Review'" [class.good]="t.rating==='Good'||t.rating==='Outstanding'" [style.height.%]="barHeight(t)"></div></div><strong>{{t.analysedKmL===null?'—':(t.analysedKmL|number:'1.2-2')}}</strong><span>{{t.date.slice(5)}}</span></button>}</div></article>
+ <article class="content-card"><div class="section-title"><div><h2>Vehicle information</h2><p>Latest fleet master.</p></div></div><div class="detail-list"><div><span>VIN</span><strong>{{analytics.vehicle.vin}}</strong></div><div><span>Odometer</span><strong>{{analytics.vehicle.odometerKm===null?'—':(analytics.vehicle.odometerKm|number)+' km'}}</strong></div><div><span>Fleet type</span><strong>{{analytics.vehicle.peerType}}</strong></div><div><span>Vehicle group</span><strong>{{analytics.vehicle.vehicleGroup}}</strong></div><div><span>Destinations in history</span><strong>{{analytics.destinations.length}}</strong></div></div><div class="button-row"><button class="outline-btn" (click)="router.navigate(['/app/analytics'],{queryParams:{registration:analytics.vehicle.registration}})">Compare trips</button><button class="outline-btn" (click)="router.navigate(['/app/fuel-history'],{queryParams:{registration:analytics.vehicle.registration}})">Monthly fuel history</button></div></article>
+</section>
+<section class="content-card"><div class="section-title"><div><h2>Historical full cycles</h2><p>Each result primarily compares with prior valid cycles from equivalent trucks of the same fleet-master model/type + axle configuration on the same route. This exact truck's own route history is retained separately; Baseline is shown when there is not enough comparable history.</p></div><button class="text-action" (click)="router.navigate(['/app/analytics'],{queryParams:{registration:analytics.vehicle.registration}})">Advanced filters →</button></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Cycle</th><th>Route</th><th>Total km</th><th>Total litres</th><th>Cycle km/L</th><th>Model/route avg</th><th>Difference</th><th>Rating</th><th></th></tr></thead><tbody>@for(t of analytics.trips;track t.id){<tr><td>{{t.openingDate||'—'}} → {{t.closingDate||t.date}}</td><td>{{t.routeLabel||t.destination||'Unknown'}}</td><td>{{t.kilometers===null?'—':(t.kilometers|number)}}</td><td>{{t.litres===null?'—':(t.litres|number:'1.0-1')}}</td><td>{{t.analysedKmL===null?'—':(t.analysedKmL|number:'1.2-2')}}</td><td>{{t.benchmark?.averageKmL===undefined?'—':(t.benchmark?.averageKmL|number:'1.2-2')}}</td><td>{{t.deviationPct===null?'—':(t.deviationPct|number:'1.1-1')+'%'}}</td><td><span class="rating-badge" [attr.data-rating]="t.rating">{{t.rating}}</span></td><td><button class="small-action" (click)="router.navigate(['/app/trips',t.id])">Explain</button></td></tr>}</tbody></table></div></section>
+} @else {<section class="content-card"><p>{{message}}</p></section>}
+`})
+export class VehicleProfileComponent{
+ analytics?:VehicleAnalytics;message='Loading vehicle analytics…';reg='';
+ constructor(private route:ActivatedRoute,private data:MockDataService,public router:Router){this.route.paramMap.subscribe(p=>{this.reg=p.get('reg')||'';void this.load();});}
+ async load(){this.analytics=undefined;this.message='Loading vehicle analytics…';try{this.analytics=await this.data.vehicleAnalytics(this.reg,200);}catch{this.message='Vehicle analytics could not be loaded. Check the Express API.';}}
+ get chartTrips(){return (this.analytics?.trips||[]).filter(t=>t.analysedKmL!==null&&t.rating!=='Data Warning').slice(0,10).reverse();}
+ barHeight(t:TripAnalysis){const max=Math.max(1,...this.chartTrips.map(x=>x.analysedKmL||0));return Math.max(8,((t.analysedKmL||0)/max)*100);}
+}

@@ -1,0 +1,168 @@
+# GitHub only reads workflows from the repository root, so this file lives in /.github and
+# every job runs inside the project folder.
+name: Stellar Final POE CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stellar-final-poe-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository-qa:
+    name: Final POE repository QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: Stellar_Fuel_Monitor_Final_POE
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify required final submission structure
+        run: node scripts/verify-submission.mjs
+      - name: Check tracked secrets and build outputs
+        run: node scripts/check-no-secrets.mjs
+      - name: Verify Android lifecycle/state logging
+        run: node scripts/verify-android-logging.mjs
+
+  android:
+    name: Android build and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: repository-qa
+    defaults:
+      run:
+        working-directory: Stellar_Fuel_Monitor_Final_POE/android-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Run Android JVM unit tests
+        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+      - name: Build debug APK
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Upload Android unit-test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-poe-android-unit-test-reports
+          path: |
+            Stellar_Fuel_Monitor_Final_POE/android-app/app/build/reports/tests/testDebugUnitTest/
+            Stellar_Fuel_Monitor_Final_POE/android-app/app/build/test-results/testDebugUnitTest/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload debug APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stellar-final-poe-debug-apk
+          path: Stellar_Fuel_Monitor_Final_POE/android-app/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  server:
+    name: REST API tests and analytics verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: repository-qa
+    defaults:
+      run:
+        working-directory: Stellar_Fuel_Monitor_Final_POE/server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: Stellar_Fuel_Monitor_Final_POE/server/package-lock.json
+      - name: Install server dependencies
+        run: npm ci
+      - name: Check server syntax
+        run: npm run check
+      - name: Run server automated tests
+        run: npm test
+      - name: Verify packaged Stellar analytics
+        run: npm run verify:analytics -- --quiet
+
+  signed-release:
+    name: Signed Final POE release
+    if: startsWith(github.ref, 'refs/tags/Final-POE')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: [android, server]
+    defaults:
+      run:
+        working-directory: Stellar_Fuel_Monitor_Final_POE/android-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Restore release signing material
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          STELLAR_API_BASE_URL: ${{ secrets.STELLAR_API_BASE_URL }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+          PLAY_STORE_PRIVACY_URL: ${{ secrets.PLAY_STORE_PRIVACY_URL }}
+        run: |
+          for name in KEYSTORE_B64 STORE_PASSWORD KEY_ALIAS KEY_PASSWORD STELLAR_API_BASE_URL FIREBASE_API_KEY FIREBASE_APP_ID FIREBASE_PROJECT_ID FIREBASE_MESSAGING_SENDER_ID GOOGLE_WEB_CLIENT_ID PLAY_STORE_PRIVACY_URL; do
+            test -n "${!name}" || (echo "Missing required release value: $name" && exit 1)
+          done
+          case "$STELLAR_API_BASE_URL" in
+            https://*) ;;
+            *) echo "Release STELLAR_API_BASE_URL must use HTTPS"; exit 1 ;;
+          esac
+          case "$PLAY_STORE_PRIVACY_URL" in
+            https://*) ;;
+            *) echo "PLAY_STORE_PRIVACY_URL must be a public HTTPS URL"; exit 1 ;;
+          esac
+          mkdir -p release
+          echo "$KEYSTORE_B64" | base64 --decode > release/stellar-final-poe.jks
+          {
+            echo "STELLAR_API_BASE_URL=$STELLAR_API_BASE_URL"
+            echo "FIREBASE_API_KEY=$FIREBASE_API_KEY"
+            echo "FIREBASE_APP_ID=$FIREBASE_APP_ID"
+            echo "FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID"
+            echo "FIREBASE_MESSAGING_SENDER_ID=$FIREBASE_MESSAGING_SENDER_ID"
+            echo "GOOGLE_WEB_CLIENT_ID=$GOOGLE_WEB_CLIENT_ID"
+            echo "PLAY_STORE_PRIVACY_URL=$PLAY_STORE_PRIVACY_URL"
+            echo "RELEASE_KEYSTORE_PATH=release/stellar-final-poe.jks"
+            echo "RELEASE_KEYSTORE_PASSWORD=$STORE_PASSWORD"
+            echo "RELEASE_KEY_ALIAS=$KEY_ALIAS"
+            echo "RELEASE_KEY_PASSWORD=$KEY_PASSWORD"
+          } > local.properties
+      - name: Build signed production APK and AAB
+        run: gradle :app:assembleRelease :app:bundleRelease --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stellar-final-poe-signed-release
+          path: |
+            Stellar_Fuel_Monitor_Final_POE/android-app/app/build/outputs/apk/release/*.apk
+            Stellar_Fuel_Monitor_Final_POE/android-app/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+          retention-days: 30

@@ -1,0 +1,19 @@
+{
+  "4e14531502fceeafc7df09b5507ebb4d5b03e51e205a64db7ab9cdf09977523f": {
+    "cachedAt": 1793966808221,
+    "value": {
+      "available": true,
+      "status": "ok",
+      "provider": "Google Routes API",
+      "travelMode": "DRIVE",
+      "origin": "Test Origin Unique",
+      "destination": "Test Destination Unique",
+      "oneWayKm": 500,
+      "benchmarkKm": 1000,
+      "roundTrip": true,
+      "actualDistanceKm": 1100,
+      "varianceKm": 100,
+      "variancePct": 10
+    }
+  }
+}

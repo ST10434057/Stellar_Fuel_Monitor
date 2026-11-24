@@ -1,0 +1,5 @@
+{"_id":"tankcurrent_73f2776413c0903484","description":"Sasol Tank 1","capacity":46000.0,"litres":77251.0,"type":"Diesel","rate":26.4,"snapshotDate":"2026-09-07","_source":{"file":"select_ (3)(1).htm","exportDate":"2026-09-07"}}
+{"_id":"tankcurrent_fd6f9f72108163e077","description":"Stellar Tank 2","capacity":9000.0,"litres":2814.0,"type":"Diesel","rate":26.11,"snapshotDate":"2026-09-07","_source":{"file":"select_ (3)(1).htm","exportDate":"2026-09-07"}}
+{"_id":"tankcurrent_39dec1bb41bbe8c73e","description":"Stellar Tank 1","capacity":85000.0,"litres":678273.0,"type":"Diesel","rate":26.11,"snapshotDate":"2026-09-07","_source":{"file":"select_ (3)(1).htm","exportDate":"2026-09-07"}}
+{"_id":"tankcurrent_fb880850abf27a100f","description":"Sasol Oil Tanker","capacity":2000.0,"litres":100.0,"type":"Oil","rate":17.7,"snapshotDate":"2026-09-07","_source":{"file":"select_ (3)(1).htm","exportDate":"2026-09-07"}}
+{"_id":"tankcurrent_e69acacaf894c9ffb5","description":"Stellar Edenvale Oil Tanker","capacity":2000.0,"litres":1500.0,"type":"Oil","rate":17.7,"snapshotDate":"2026-09-07","_source":{"file":"select_ (3)(1).htm","exportDate":"2026-09-07"}}

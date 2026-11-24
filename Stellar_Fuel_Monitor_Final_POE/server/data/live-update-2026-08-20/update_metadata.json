@@ -1,0 +1,26 @@
+{
+  "_id": "stellar_live_update_2026_08_20_fuel_intervals",
+  "updateDate": "2026-08-20",
+  "sourcePackage": "select_li (4).zip + Part 2(2).zip",
+  "purpose": "Adds August 2026 fuel-loading-to-next-odometer intervals, recent Loading Instruction records, load/offload standing-time context, and explicit fuel attribution confidence without inventing trailer/load mass.",
+  "collections": {
+    "fuel_loading_events_update": 625,
+    "loading_instruction_updates": 1033,
+    "loading_instruction_route_updates": 443,
+    "fuel_trip_intervals": 102
+  },
+  "analytics": {
+    "intervalStartMin": "2026-08-13",
+    "intervalStartMax": "2026-08-18",
+    "validIntervals": 82,
+    "invalidOrWarningIntervals": 20,
+    "confidenceCounts": {
+      "medium": 33,
+      "low": 20,
+      "high": 14,
+      "ambiguous": 35
+    },
+    "latestDateWithCompleteIntervals": "2026-08-18"
+  },
+  "importantMethodNote": "Litres are tied to the fuel event at the start of an interval and distance is the odometer movement until the next recorded fuel event. This matches the existing Stellar consumption-report pattern but is not direct fuel-tank sensor burn. Standing hours are operational context and are not treated as engine-idle hours."
+}
